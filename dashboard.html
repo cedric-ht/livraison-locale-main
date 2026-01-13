@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Commerçant - Livraison Locale</title>
+<style>
+body {font-family:'Segoe UI', Tahoma, sans-serif; background:#f4f6f8; margin:0; padding-bottom:2rem;}
+header {background:#00b4d8; color:white; text-align:center; padding:2rem; position:sticky; top:0; z-index:100;}
+header h1 {font-size:2rem; margin-bottom:.3rem;}
+header p {opacity:.9;}
+button {padding:.5rem 1rem; border:none; border-radius:10px; background:#0077b6; color:white; cursor:pointer; transition:.3s;}
+button:hover {background:#0096c7;}
+#logout {background:#ff595e; margin-top:1rem;}
+#logout:hover {background:#ff2e33;}
+section {padding:2rem; max-width:1000px; margin:auto;}
+#productList {display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:1.5rem;}
+.productCard {background:white; padding:1rem; border-radius:15px; box-shadow:0 4px 12px rgba(0,0,0,0.1);}
+.stockControls {display:flex; gap:10px; align-items:center; margin:10px 0;}
+.unavailable {color:#999; font-style:italic;}
+form input {width:100%; padding:.6rem; margin-bottom:.6rem; border-radius:10px; border:1px solid #ccc;}
+</style>
+</head>
+<body>
+
+<header>
+<h1>Dashboard Commerçant</h1>
+<p>Gestion des produits et du stock</p>
+<button id="logout">Se déconnecter</button>
+</header>
+
+<section>
+<h2>Ajouter un produit</h2>
+<form id="addProductForm">
+<input type="text" id="productName" placeholder="Nom du produit" required>
+<input type="text" id="productPrice" placeholder="Prix (€)" required>
+<input type="number" id="productStock" placeholder="Stock initial" min="0" required>
+<button type="submit">Ajouter produit</button>
+</form>
+
+<h2>Mes produits</h2>
+<div id="productList"></div>
+</section>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+import { getAuth, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-auth.js";
+import { getFirestore, collection, addDoc, doc, deleteDoc, onSnapshot, updateDoc } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB1mljASb5TevqJ1ucDqgXsYQZqEnNxQts",
+  authDomain: "livraison-sablaise.firebaseapp.com",
+  projectId: "livraison-sablaise",
+  storageBucket: "livraison-sablaise.firebasestorage.app",
+  messagingSenderId: "930839535214",
+  appId: "1:930839535214:web:a3235919aa88d066bc507f"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+let uid;
+
+// Auth
+onAuthStateChanged(auth, user => {
+  if(user){ uid = user.uid; loadProducts(); }
+  else{ window.location.href="login.html"; }
+});
+
+// Logout
+document.getElementById("logout").onclick = () => signOut(auth).then(()=> window.location.href="login.html");
+
+// Ajouter produit
+document.getElementById("addProductForm").addEventListener("submit", async e=>{
+  e.preventDefault();
+  const name = productName.value;
+  const price = parseFloat(productPrice.value.replace(",", "."));
+  const stock = parseInt(productStock.value);
+
+  await addDoc(collection(db,"commerces",uid,"produits"),{ name, price, stock, available: stock>0 });
+  e.target.reset();
+});
+
+// Modifier stock
+async function updateStock(productId, currentStock, delta){
+  const newStock = Math.max(0, currentStock + delta);
+  await updateDoc(doc(db,"commerces",uid,"produits",productId), { stock:newStock, available:newStock>0 });
+}
+
+// Supprimer produit
+window.deleteProduct = async id => { if(confirm("Supprimer ce produit ?")) await deleteDoc(doc(db,"commerces",uid,"produits",id)); }
+
+// Affichage produits
+function loadProducts(){
+  onSnapshot(collection(db,"commerces",uid,"produits"), snapshot=>{
+    productList.innerHTML="";
+    snapshot.forEach(docSnap=>{
+      const p = docSnap.data();
+      const div = document.createElement("div"); div.className="productCard";
+      div.innerHTML=`
+        <h3>${p.name}</h3>
+        <p>Prix : ${p.price} €</p>
+        <p>Stock restant : <strong>${p.stock}</strong></p>
+        <div class="stockControls">
+          <button onclick="updateStock('${docSnap.id}',${p.stock},-1)">➖</button>
+          <button onclick="updateStock('${docSnap.id}',${p.stock},1)">➕</button>
+        </div>
+        <p class="${p.available?'':'unavailable'}">${p.available?'Disponible':'Indisponible'}</p>
+        <button onclick="deleteProduct('${docSnap.id}')">Supprimer</button>
+      `;
+      productList.appendChild(div);
+    });
+  });
+}
+window.updateStock = updateStock;
+</script>
+
+</body>
+</html>

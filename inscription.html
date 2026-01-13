@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inscription Commerçant - Livraison Locale</title>
+<style>
+body {font-family:'Segoe UI', Tahoma, sans-serif; background:#f4f6f8; margin:0; padding:0;}
+header {background:#00b4d8; color:white; text-align:center; padding:2rem;}
+header h1 {font-size:2.5rem; margin-bottom:0.5rem;}
+header p {font-size:1.2rem;}
+section {max-width:500px; margin:2rem auto; background:white; padding:2rem; border-radius:15px; box-shadow:0 4px 12px rgba(0,0,0,0.1);}
+h2 {color:#0077b6; text-align:center; margin-bottom:1rem;}
+form input, form textarea {width:100%; padding:0.8rem; margin-bottom:1rem; border-radius:10px; border:1px solid #ccc; font-size:1rem;}
+form button {width:100%; padding:0.8rem; border:none; border-radius:10px; background:#0077b6; color:white; font-weight:600; cursor:pointer; transition:0.3s;}
+form button:hover {background:#0096c7;}
+footer {text-align:center; padding:2rem 1rem; background:#03045e; color:white; margin-top:3rem;}
+</style>
+</head>
+<body>
+
+<header>
+<h1>Devenez Partenaire</h1>
+<p>Inscrivez votre commerce pour rejoindre Livraison Locale</p>
+</header>
+
+<section>
+<h2>Formulaire d'inscription</h2>
+<form id="inscriptionForm">
+  <input type="text" id="nomCommerce" placeholder="Nom du commerce" required>
+  <input type="text" id="nomGerant" placeholder="Nom du gérant" required>
+  <input type="email" id="email" placeholder="Email" required>
+  <input type="tel" id="phone" placeholder="Téléphone / WhatsApp" required>
+  <button type="submit">S'inscrire</button>
+</form>
+</section>
+
+<footer>
+<p>© 2026 Livraison Locale | Contact : cedric.huet.pro@gmail.com</p>
+</footer>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-app.js";
+import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/12.7.0/firebase-firestore.js";
+
+// 🔑 Config Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyB1mljASb5TevqJ1ucDqgXsYQZqEnNxQts",
+  authDomain: "livraison-sablaise.firebaseapp.com",
+  projectId: "livraison-sablaise",
+  storageBucket: "livraison-sablaise.firebasestorage.app",
+  messagingSenderId: "930839535214",
+  appId: "1:930839535214:web:a3235919aa88d066bc507f",
+  measurementId: "G-R3ZCGLQ69E"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+document.getElementById("inscriptionForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const nomCommerce = document.getElementById("nomCommerce").value;
+  const nomGerant = document.getElementById("nomGerant").value;
+  const email = document.getElementById("email").value;
+  const phone = document.getElementById("phone").value;
+
+  try {
+    await addDoc(collection(db, "inscriptions_commerces"), {
+      name: nomCommerce,
+      gerant: nomGerant,
+      email: email,
+      phone: phone,
+      date: new Date()
+    });
+    alert("Merci ! Votre inscription a été reçue.");
+    e.target.reset();
+  } catch (err) {
+    console.error(err);
+    alert("Erreur lors de l'inscription. Réessayez.");
+  }
+});
+</script>
+
+</body>
+</html>
